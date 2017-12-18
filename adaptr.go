@@ -18,6 +18,13 @@ func Adapt(h http.Handler, adapters ...Adapter) http.Handler {
 	return h
 }
 
+func PlatformCtxAdapter(NewContextFn func(*http.Request)context.Context) Adapter {
+	return func(h http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r.WithContext(NewContextFn(r)))
+		})
+	}
+}
 
 func SetCtxValue(r *http.Request, key, value interface{}) (*http.Request) {
 	return r.WithContext(context.WithValue(r.Context(), key, value))
