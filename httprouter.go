@@ -40,3 +40,14 @@ func HttprouterAdapt(h http.Handler, httprParamsCtxKey interface{}, adapters ...
 	h = Adapt(h, adapters...)
 	return compatibleHandler(h, httprParamsCtxKey)
 }
+
+
+func WrapHandleFuncAdapters(hFn http.HandlerFunc, adapters []Adapter, preAdaptrs []Adapter, postAdaptrs []Adapter) httprouter.Handle {
+	//to beginning
+	if preAdaptrs != nil {
+		adapters = append(preAdaptrs, adapters...)
+	}
+	//to end
+	adapters = append(adapters, authBouncer())
+	return HttprouterAdaptFn(hFn, httpRouterUrlParamsKey, adapters...)
+}

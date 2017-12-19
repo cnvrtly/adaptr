@@ -4,21 +4,29 @@ import (
 	"net/http"
 	"context"
 	"sync"
+	xCtx "golang.org/x/net/context"
 	)
 
 type Adapter func(handle http.Handler) http.Handler
 
 func Adapt(h http.Handler, adapters ...Adapter) http.Handler {
-	/*for i := len(adapters); i >= 0; i-- {
-		h = adapters[i](h)
-	}*/
 	for i := len(adapters) - 1; i >= 0; i-- {
 		h = adapters[i](h)
 	}
 	return h
 }
+type NewPlatformCtx func(*http.Request)context.Context
+type NewPlatformXCtx func(*http.Request)xCtx.Context
 
-func PlatformCtxAdapter(NewContextFn func(*http.Request)context.Context) Adapter {
+func PlatformXCtxAdapter(NewContextFn NewPlatformXCtx ) Adapter {
+	return func(h http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r.WithContext(NewContextFn(r)))
+		})
+	}
+}
+
+func PlatformCtxAdapter(NewContextFn NewPlatformCtx ) Adapter {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			h.ServeHTTP(w, r.WithContext(NewContextFn(r)))
@@ -42,7 +50,6 @@ func CallOnce(f func(w http.ResponseWriter, r *http.Request)) Adapter {
 	once:=sync.Once{}
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			//println("CallOnce called")
 			once.Do(func() {
 				f(w, r)
 			})
