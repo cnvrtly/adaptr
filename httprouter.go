@@ -3,10 +3,19 @@ package adaptr
 import (
 	"github.com/julienschmidt/httprouter"
 	"net/http"
-	"sync"
 )
 
-var once = sync.Once{}
+
+const CtxRouteAuthorizedKey = ctxRouteAuthorizedType("routeAuthorized")
+type ctxRouteAuthorizedType string
+
+const CtxHttpRouterParamsKey = ctxHttprParamsCtxType("httpRouterParams")
+type ctxHttprParamsCtxType string
+
+const RequestJsonStructCtxKey = requestJsonStructType("reqJsonStruct")
+type requestJsonStructType string
+
+//var once = sync.Once{}
 
 // Simple accepts the name of a function so you don't have to wrap it with http.HandlerFunc
 // Example: r.GET("/", httprouterwrapper.Simple(controller.Index))
@@ -48,6 +57,6 @@ func WrapHandleFuncAdapters(hFn http.HandlerFunc, adapters []Adapter, preAdaptrs
 		adapters = append(preAdaptrs, adapters...)
 	}
 	//to end
-	adapters = append(adapters, authBouncer())
-	return HttprouterAdaptFn(hFn, httpRouterUrlParamsKey, adapters...)
+	adapters = append(adapters, postAdaptrs...)
+	return HttprouterAdaptFn(hFn, CtxHttpRouterParamsKey, adapters...)
 }
