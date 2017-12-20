@@ -5,14 +5,16 @@ import (
 	"net/http"
 )
 
-
 const CtxRouteAuthorizedKey = ctxRouteAuthorizedType("routeAuthorized")
+
 type ctxRouteAuthorizedType string
 
 const CtxHttpRouterParamsKey = ctxHttprParamsCtxType("httpRouterParams")
+
 type ctxHttprParamsCtxType string
 
 const RequestJsonStructCtxKey = requestJsonStructType("reqJsonStruct")
+
 type requestJsonStructType string
 
 //var once = sync.Once{}
@@ -20,7 +22,7 @@ type requestJsonStructType string
 // Simple accepts the name of a function so you don't have to wrap it with http.HandlerFunc
 // Example: r.GET("/", httprouterwrapper.Simple(controller.Index))
 func compatibleHandlerFn(h http.HandlerFunc, httprParamsCtxKey interface{}) httprouter.Handle {
-	return toHttpRouterHandle(http.Handler(h), httprParamsCtxKey )
+	return toHttpRouterHandle(http.Handler(h), httprParamsCtxKey)
 }
 
 // Compatible accepts a handler to make it compatible with http.HandlerFunc
@@ -41,15 +43,9 @@ func HttprouterAdaptFn(f http.HandlerFunc, httprParamsCtxKey interface{}, adapte
 	return HttprouterAdapt(http.HandlerFunc(f), httprParamsCtxKey, adapters...)
 }
 func HttprouterAdapt(h http.Handler, httprParamsCtxKey interface{}, adapters ...Adapter) httprouter.Handle {
-
-	///h = authBouncer()(h)
-	/*for i := len(adapters) - 1; i >= 0; i-- {
-		h = adapters[i](h)
-	}*/
 	h = Adapt(h, adapters...)
 	return compatibleHandler(h, httprParamsCtxKey)
 }
-
 
 func WrapHandleFuncAdapters(hFn http.HandlerFunc, adapters []Adapter, preAdaptrs []Adapter, postAdaptrs []Adapter) httprouter.Handle {
 	//to beginning
@@ -57,6 +53,18 @@ func WrapHandleFuncAdapters(hFn http.HandlerFunc, adapters []Adapter, preAdaptrs
 		adapters = append(preAdaptrs, adapters...)
 	}
 	//to end
-	adapters = append(adapters, postAdaptrs...)
+	if postAdaptrs != nil {
+		adapters = append(adapters, postAdaptrs...)
+	}
 	return HttprouterAdaptFn(hFn, CtxHttpRouterParamsKey, adapters...)
 }
+
+func CreateOptionsRouterHandle(corsAdapter adaptr.Adapter) httprouter.Handle {
+	return WrapHandleFuncAdapters(emptyHandler,
+		[]Adapter{corsAdapter, AuthPermitAll()},
+		nil,
+		nil,
+	)
+}
+
+func emptyHandlerFn(w http.ResponseWriter, r *http.Request) {}
