@@ -59,9 +59,9 @@ func WrapHandleFuncAdapters(hFn http.HandlerFunc, adapters []Adapter, preAdaptrs
 	return HttprouterAdaptFn(hFn, CtxHttpRouterParamsKey, adapters...)
 }
 
-func CreateOptionsRouterHandle(corsAdapter adaptr.Adapter) httprouter.Handle {
-	return WrapHandleFuncAdapters(emptyHandler,
-		[]Adapter{corsAdapter, AuthPermitAll()},
+func CreateOptionsRouterHandle(corsAdapter Adapter) httprouter.Handle {
+	return WrapHandleFuncAdapters(emptyHandlerFn,
+		[]Adapter{corsAdapter, AuthPermitAll(CtxRouteAuthorizedKey)},
 		nil,
 		nil,
 	)
