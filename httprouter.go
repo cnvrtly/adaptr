@@ -6,16 +6,16 @@ import (
 )
 
 const CtxRouteAuthorizedKey = ctxRouteAuthorizedType("routeAuthorized")
-
 type ctxRouteAuthorizedType string
 
 const CtxHttpRouterParamsKey = ctxHttprParamsCtxType("httpRouterParams")
-
 type ctxHttprParamsCtxType string
 
-const RequestJsonStructCtxKey = requestJsonStructType("reqJsonStruct")
-
+const CtxRequestJsonStructKey = requestJsonStructType("reqJsonStruct")
 type requestJsonStructType string
+
+const CtxTokenKey = ctxTokenKeyType("ctxTokenKey")
+type ctxTokenKeyType string
 
 //var once = sync.Once{}
 

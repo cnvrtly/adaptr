@@ -45,7 +45,7 @@ func GetTokenFromReq(r *http.Request, tknParameterName string, requestJsonStruct
 	if tknParameterName != "" {
 		var tknParValue string
 		if requestJsonStructCtxKey== nil {
-			requestJsonStructCtxKey=RequestJsonStructCtxKey
+			requestJsonStructCtxKey= CtxRequestJsonStructKey
 		}
 		ctxJsonStruct := GetCtxValue(r, requestJsonStructCtxKey).(map[string]interface{})
 		if (ctxJsonStruct != nil) {
