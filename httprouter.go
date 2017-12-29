@@ -17,6 +17,12 @@ type requestJsonStructType string
 const CtxTokenKey = ctxTokenKeyType("ctxTokenKey")
 type ctxTokenKeyType string
 
+const CtxTokenUserIdentKey = ctxTokenUserIdentType("ctxTokenUserIdentType")
+type ctxTokenUserIdentType string
+
+const CtxTokenAudienceKey = ctxTokenAudienceType("ctxTokenAudienceType")
+type ctxTokenAudienceType string
+
 //var once = sync.Once{}
 
 // Simple accepts the name of a function so you don't have to wrap it with http.HandlerFunc
