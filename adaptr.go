@@ -107,6 +107,20 @@ func Cors(domain string, allowHeaders ... string) Adapter {
 	}
 }
 
+func ParamId2Ctx(ctxKey interface{}, reset bool, requiredProps ... string) Adapter {
+	return func(h http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			params:=GetCtxValue(r, CtxHttpRouterParamsKey)
+			if params!= nil {
+				idVal:=params.(map[string]interface{})["id"]
+				if idVal!= nil {
+					SetCtxValue(r, ctxKey, idVal.(string))
+				}
+			}
+		})
+	}
+}
+
 func Json2Ctx(ctxKey interface{}, reset bool, requiredProps ... string) Adapter {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -176,6 +190,8 @@ func Json2Ctx(ctxKey interface{}, reset bool, requiredProps ... string) Adapter 
 		})
 	}
 }
+
+
 
 func ReqrdParams(reqMethod string, requiredParams ... string) Adapter {
 	return func(h http.Handler) http.Handler {

@@ -17,6 +17,9 @@ type requestJsonStructType string
 const CtxRequestBodyByteArrKey = requestBodyStringType("reqBodyString")
 type requestBodyStringType string
 
+const CtxRequestIdParamKey = requestIdParamType("reqIdParam")
+type requestIdParamType string
+
 const CtxTokenKey = ctxTokenKeyType("ctxTokenKey")
 type ctxTokenKeyType string
 
