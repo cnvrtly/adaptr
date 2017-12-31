@@ -8,7 +8,8 @@ import (
 	"fmt"
 	"encoding/json"
 	"io/ioutil"
-	)
+	"bytes"
+)
 
 type Adapter func(handle http.Handler) http.Handler
 
@@ -18,10 +19,11 @@ func Adapt(h http.Handler, adapters ...Adapter) http.Handler {
 	}
 	return h
 }
-type NewPlatformCtx func(*http.Request)context.Context
-type NewPlatformXCtx func(*http.Request)xCtx.Context
 
-func PlatformXCtxAdapter(NewContextFn NewPlatformXCtx ) Adapter {
+type NewPlatformCtx func(*http.Request) context.Context
+type NewPlatformXCtx func(*http.Request) xCtx.Context
+
+func PlatformXCtxAdapter(NewContextFn NewPlatformXCtx) Adapter {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			h.ServeHTTP(w, r.WithContext(NewContextFn(r)))
@@ -29,7 +31,7 @@ func PlatformXCtxAdapter(NewContextFn NewPlatformXCtx ) Adapter {
 	}
 }
 
-func PlatformCtxAdapter(NewContextFn NewPlatformCtx ) Adapter {
+func PlatformCtxAdapter(NewContextFn NewPlatformCtx) Adapter {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			h.ServeHTTP(w, r.WithContext(NewContextFn(r)))
@@ -46,11 +48,15 @@ func GetCtxValue(r *http.Request, key interface{}) interface{} {
 }
 
 func GetCtxValueStr(r *http.Request, key interface{}) string {
-	return GetCtxValue(r, key).(string)
+	ctxVal := GetCtxValue(r, key)
+	if ctxVal == nil {
+		return ""
+	}
+	return ctxVal.(string)
 }
 
 func CallOnce(f func(w http.ResponseWriter, r *http.Request)) Adapter {
-	once:=sync.Once{}
+	once := sync.Once{}
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			once.Do(func() {
@@ -101,7 +107,6 @@ func Cors(domain string, allowHeaders ... string) Adapter {
 	}
 }
 
-
 func Json2Ctx(ctxKey interface{}, reset bool, requiredProps ... string) Adapter {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -118,12 +123,20 @@ func Json2Ctx(ctxKey interface{}, reset bool, requiredProps ... string) Adapter 
 
 				valueStructPointer := map[string]interface{}{}
 				if (r.Method == http.MethodPost || r.Method == http.MethodPut || r.Method == http.MethodPatch) {
-					if r.Body == nil {
+					bodyValCtxRequest, err := getBodyValue(r)
+					if err != nil {
+						http.Error(w, fmt.Sprintf("Error getting request body err=%v", err), http.StatusBadRequest)
+						return
+					}
+					if bodyValCtxRequest != nil {
+						r=bodyValCtxRequest
+					}
+					bodyVal:= GetCtxValue(r, CtxRequestBodyByteArrKey).([]byte)
+					if bodyVal == nil || len(bodyVal)==0 {
 						http.Error(w, "Please send a request body", http.StatusBadRequest)
 						return
 					}
-
-					err := json.NewDecoder(r.Body).Decode(&valueStructPointer)
+					err = json.NewDecoder(bytes.NewBuffer(bodyVal)).Decode(&valueStructPointer)
 					if err != nil {
 						http.Error(w, "error parsing json err="+err.Error(), http.StatusBadRequest)
 						return
@@ -190,7 +203,7 @@ func ReqrdParams(reqMethod string, requiredParams ... string) Adapter {
 	}
 }
 
-func ValidateCtxTkn(ctxTokenKey interface{}, tknValidationFunc func(tkn string)(bool, error)) Adapter {
+func ValidateCtxTkn(ctxTokenKey interface{}, tknValidationFunc func(tkn string) (bool, error)) Adapter {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			//check token
@@ -202,7 +215,7 @@ func ValidateCtxTkn(ctxTokenKey interface{}, tknValidationFunc func(tkn string)(
 				var tknValue string = ctxTknVal.(string)
 				if tknValue != "" {
 
-					isValid, err= tknValidationFunc(tknValue)
+					isValid, err = tknValidationFunc(tknValue)
 					if err != nil {
 						//log.Errorf(r.Context(), "ValidateCtxTkn Adapter nativeTS.Validate err=", err)
 						http.Error(w, "Token not valid.", http.StatusUnauthorized)
@@ -239,8 +252,8 @@ func Tkn2Ctx(ctxTokenKey interface{}, tknParameterName string, requestJsonStruct
 func AuthPermitAll(ctxRouteAuthorizedKey interface{}) Adapter {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if ctxRouteAuthorizedKey== nil {
-				ctxRouteAuthorizedKey=CtxRouteAuthorizedKey
+			if ctxRouteAuthorizedKey == nil {
+				ctxRouteAuthorizedKey = CtxRouteAuthorizedKey
 			}
 			h.ServeHTTP(w, SetCtxValue(r, ctxRouteAuthorizedKey, true))
 		})
@@ -261,3 +274,17 @@ func WriteResponse(writeValue string) Adapter {
 	}
 }
 
+func getBodyValue(r *http.Request) (*http.Request, error) {
+	bodyVal := GetCtxValue(r, CtxRequestBodyByteArrKey)
+	if bodyVal != nil {
+		return nil, nil
+	}
+
+	bodyValRead, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return nil, err
+	}
+	defer r.Body.Close()
+
+	return SetCtxValue(r, CtxRequestBodyByteArrKey, bodyValRead), nil
+}

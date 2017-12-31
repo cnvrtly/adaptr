@@ -14,6 +14,9 @@ type ctxHttprParamsCtxType string
 const CtxRequestJsonStructKey = requestJsonStructType("reqJsonStruct")
 type requestJsonStructType string
 
+const CtxRequestBodyByteArrKey = requestBodyStringType("reqBodyString")
+type requestBodyStringType string
+
 const CtxTokenKey = ctxTokenKeyType("ctxTokenKey")
 type ctxTokenKeyType string
 
@@ -22,6 +25,9 @@ type ctxTokenUserIdentType string
 
 const CtxTokenAudienceKey = ctxTokenAudienceType("ctxTokenAudienceType")
 type ctxTokenAudienceType string
+
+const CtxWorkspaceIdentObjKey = ctxTokenAudienceType("ctxWorkspaceIdentObjType")
+type ctxWorkspaceIdentObjType string
 
 //var once = sync.Once{}
 
