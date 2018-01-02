@@ -50,6 +50,7 @@ func toHttpRouterHandle(h http.Handler, httprParamsCtxKey interface{}) func(w ht
 		if httprParamsCtxKey != nil {
 			r = SetCtxValue(r, httprParamsCtxKey, p)
 		}
+
 		h.ServeHTTP(w, r)
 	}
 }
@@ -71,6 +72,7 @@ func WrapHandleFuncAdapters(hFn http.HandlerFunc, adapters []Adapter, preAdaptrs
 	if postAdaptrs != nil {
 		adapters = append(adapters, postAdaptrs...)
 	}
+
 	return HttprouterAdaptFn(hFn, CtxHttpRouterParamsKey, adapters...)
 }
 

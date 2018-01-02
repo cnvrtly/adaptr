@@ -5,10 +5,11 @@ import (
 	"context"
 	"sync"
 	xCtx "golang.org/x/net/context"
-	"fmt"
 	"encoding/json"
 	"io/ioutil"
 	"bytes"
+	"github.com/julienschmidt/httprouter"
+	"fmt"
 )
 
 type Adapter func(handle http.Handler) http.Handler
@@ -26,6 +27,8 @@ type NewPlatformXCtx func(*http.Request) xCtx.Context
 func PlatformXCtxAdapter(NewContextFn NewPlatformXCtx) Adapter {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+			fmt.Println("JJJJJJJ2")
 			h.ServeHTTP(w, r.WithContext(NewContextFn(r)))
 		})
 	}
@@ -107,14 +110,14 @@ func Cors(domain string, allowHeaders ... string) Adapter {
 	}
 }
 
-func ParamId2Ctx(ctxKey interface{}, reset bool, requiredProps ... string) Adapter {
+func ParamId2Ctx(ctxKey interface{}) Adapter {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			params:=GetCtxValue(r, CtxHttpRouterParamsKey)
 			if params!= nil {
-				idVal:=params.(map[string]interface{})["id"]
-				if idVal!= nil {
-					SetCtxValue(r, ctxKey, idVal.(string))
+				idVal:=params.(httprouter.Params).ByName("id")
+				if idVal!= "" {
+					SetCtxValue(r, ctxKey, idVal)
 				}
 			}
 		})
@@ -124,7 +127,7 @@ func ParamId2Ctx(ctxKey interface{}, reset bool, requiredProps ... string) Adapt
 func Json2Ctx(ctxKey interface{}, reset bool, requiredProps ... string) Adapter {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
+fmt.Println("JJJJJJJ")
 			if currCtxVal := GetCtxValue(r, ctxKey); !reset && currCtxVal != nil {
 				for _, param := range requiredProps {
 					if _, ok := currCtxVal.(map[string]interface{})[param]; !ok {
@@ -135,11 +138,16 @@ func Json2Ctx(ctxKey interface{}, reset bool, requiredProps ... string) Adapter 
 				///return
 			} else {
 
+				fmt.Println("JJJJJJJ1")
 				valueStructPointer := map[string]interface{}{}
 				if (r.Method == http.MethodPost || r.Method == http.MethodPut || r.Method == http.MethodPatch) {
 					bodyValCtxRequest, err := getBodyValue(r)
 					if err != nil {
-						http.Error(w, fmt.Sprintf("Error getting request body err=%v", err), http.StatusBadRequest)
+						if requiredProps!=nil && len(requiredProps)>0 {
+							http.Error(w, fmt.Sprintf("Error getting request body err=%v", err), http.StatusBadRequest)
+							return
+						}
+						h.ServeHTTP(w, r)
 						return
 					}
 					if bodyValCtxRequest != nil {
@@ -147,7 +155,11 @@ func Json2Ctx(ctxKey interface{}, reset bool, requiredProps ... string) Adapter 
 					}
 					bodyVal:= GetCtxValue(r, CtxRequestBodyByteArrKey).([]byte)
 					if bodyVal == nil || len(bodyVal)==0 {
-						http.Error(w, "Please send a request body", http.StatusBadRequest)
+						if requiredProps!=nil && len(requiredProps)>0 {
+							http.Error(w, "Please send a request body", http.StatusBadRequest)
+							return
+						}
+						h.ServeHTTP(w, r)
 						return
 					}
 					err = json.NewDecoder(bytes.NewBuffer(bodyVal)).Decode(&valueStructPointer)
@@ -162,7 +174,7 @@ func Json2Ctx(ctxKey interface{}, reset bool, requiredProps ... string) Adapter 
 						}
 					}
 				}
-				if r.Method == http.MethodGet {
+				if r.Method == http.MethodGet && len(requiredProps)>0{
 					for _, param := range requiredProps {
 
 						paramVal := r.URL.Query().Get(param)
