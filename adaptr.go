@@ -27,8 +27,6 @@ type NewPlatformXCtx func(*http.Request) xCtx.Context
 func PlatformXCtxAdapter(NewContextFn NewPlatformXCtx) Adapter {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-			fmt.Println("JJJJJJJ2")
 			h.ServeHTTP(w, r.WithContext(NewContextFn(r)))
 		})
 	}
@@ -128,7 +126,6 @@ func ParamId2Ctx(ctxKey interface{}) Adapter {
 func Json2Ctx(ctxKey interface{}, reset bool, requiredProps ... string) Adapter {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-fmt.Println("JJJJJJJ")
 			if currCtxVal := GetCtxValue(r, ctxKey); !reset && currCtxVal != nil {
 				for _, param := range requiredProps {
 					if _, ok := currCtxVal.(map[string]interface{})[param]; !ok {
@@ -138,8 +135,6 @@ fmt.Println("JJJJJJJ")
 				}
 				///return
 			} else {
-
-				fmt.Println("JJJJJJJ1")
 				valueStructPointer := map[string]interface{}{}
 				if (r.Method == http.MethodPost || r.Method == http.MethodPut || r.Method == http.MethodPatch) {
 					bodyValCtxRequest, err := getBodyValue(r)
