@@ -117,9 +117,10 @@ func ParamId2Ctx(ctxKey interface{}) Adapter {
 			if params!= nil {
 				idVal:=params.(httprouter.Params).ByName("id")
 				if idVal!= "" {
-					SetCtxValue(r, ctxKey, idVal)
+					r=SetCtxValue(r, ctxKey, idVal)
 				}
 			}
+			h.ServeHTTP(w, r)
 		})
 	}
 }
