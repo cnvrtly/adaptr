@@ -10,6 +10,7 @@ import (
 	"bytes"
 	"github.com/julienschmidt/httprouter"
 	"fmt"
+	"strings"
 )
 
 type Adapter func(handle http.Handler) http.Handler
@@ -99,10 +100,12 @@ func Cors(domain string, allowHeaders ... string) Adapter {
 				domain = r.Header.Get("origin")
 			}
 			w.Header().Set("Access-Control-Allow-Origin", domain)
-			for _, hdr := range allowHeaders {
-				w.Header().Add("Access-Control-Allow-Headers", hdr)
-			}
-			w.Header().Add("Access-Control-Allow-Headers", "Content-Type")
+			allowHeaders=append(allowHeaders, "Content-Type")
+			//for _, hdr := range allowHeaders {
+			//if len(allowHeaders)>0{
+				w.Header().Add("Access-Control-Allow-Headers", strings.Join(allowHeaders, ", "))
+			//}
+			//w.Header().Add("Access-Control-Allow-Headers", "Content-Type")
 			h.ServeHTTP(w, r)
 		})
 	}
